@@ -10,6 +10,7 @@ COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
 
 # this build step will cache your dependencies
+RUN rustup component add rustfmt
 RUN cargo build --release
 RUN rm src/*.rs
 
@@ -20,7 +21,6 @@ COPY ./build.rs ./build.rs
 
 # build for release
 RUN rm ./target/release/deps/commandservice*
-RUN rustup component add rustfmt
 RUN cargo build --release
 
 # our final base
