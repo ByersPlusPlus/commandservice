@@ -22,7 +22,7 @@ async-stream = "0.3.2"
 fern = { version = "0.6.0", features = ["colored"] }
 log = "0.4.14"
 chrono = "0.4.19"
-bpp-command-api = { git = "https://github.com/ByersPlusPlus/bpp-command-api", tag = "v0.2.0-1" }
+bpp-command-api = { git = "https://github.com/ByersPlusPlus/bpp-command-api", tag = "v0.2.1" }
 # Uncomment this, if you have the API in the parent directory and do some debugging
 # Don't forget to comment the entry above
 # bpp-command-api = { path = "../bpp-command-api" }

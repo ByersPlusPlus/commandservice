@@ -1,10 +1,9 @@
 use async_trait::async_trait;
-use chrono::NaiveDateTime;
-use std::{borrow::{Borrow, BorrowMut}, cell::{RefCell, RefMut}, collections::HashMap, ffi::OsStr, hash::Hash, net::SocketAddr, path::PathBuf, sync::{Arc, Mutex}, time::Duration};
-use tonic::{Request, Status, transport::{Channel, Server}};
+use std::{ collections::HashMap, ffi::OsStr, path::PathBuf, sync::{Arc, Mutex}, time::Duration};
+use tonic::{Request, transport::Channel};
 
 use super::youtubeservice::you_tube_service_client::YouTubeServiceClient;
-use bpp_command_api::{structs::CommandUser, userservice::user_service_client::UserServiceClient};
+use bpp_command_api::{userservice::user_service_client::UserServiceClient};
 use bpp_command_api::userservice::BppUserById;
 use bpp_command_api::{
     structs::Message,
@@ -90,10 +89,6 @@ impl bpp_command_api::traits::CommandRegistrar for CommandRegistrar {
         }
         self.commands.insert(name.to_string(), proxy);
     }
-}
-
-fn from_prost_timestamp(prost_timestamp: &prost_types::Timestamp) -> NaiveDateTime {
-    NaiveDateTime::from_timestamp(prost_timestamp.seconds, prost_timestamp.nanos as u32)
 }
 
 type YouTubeClient = Arc<Mutex<YouTubeServiceClient<tonic::transport::Channel>>>;
@@ -225,6 +220,7 @@ impl CommandProcessor {
         return Ok(());
     }
 
+    #[allow(dead_code)]
     pub fn unload<S: AsRef<str>>(&self, library_name: S) {
         let lib_clone = self.libraries.clone();
         let mut lib = lib_clone.lock().unwrap();

@@ -71,8 +71,8 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bpp-command-api"
-version = "0.2.0-1"
-source = "git+https://github.com/ByersPlusPlus/bpp-command-api?tag=v0.2.0-1#28d842d92b019ed9ae90106a5feb5119544bd304"
+version = "0.2.1"
+source = "git+https://github.com/ByersPlusPlus/bpp-command-api?tag=v0.2.1#008cb818462114ca962f44674b62525d12f26828"
 dependencies = [
  "async-trait",
  "chrono",

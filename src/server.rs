@@ -1,13 +1,11 @@
 use bpp_command_api::traits::YouTubeSendable;
-use tonic::{Request, Response, Status, transport::{Server, server::Router}};
+use tonic::transport::Server;
 use ::log::{debug, error, info};
 use crate::{loader::CommandProcessor, log::setup_log};
-use std::{env, net::SocketAddr, sync::{Arc, Mutex}};
+use std::{env, net::SocketAddr, sync::Arc};
 use async_trait::async_trait;
-use tonic::transport::server::Unimplemented;
 
 use commandservice::*;
-use command_service_server::{CommandService, CommandServiceServer};
 
 pub mod log;
 mod loader;
