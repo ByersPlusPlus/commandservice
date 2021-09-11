@@ -26,10 +26,10 @@ RUN cargo build --release
 # our final base
 FROM rust:1.54.0-slim-buster
 
+RUN apt update && apt install -y wait-for-it libc6
+
 # copy the build artifact from the build stage
 COPY --from=build /commandservice/target/release/commandservice-server .
-
-RUN apt update && apt install -y wait-for-it
 
 # set the startup command to run your binary
 CMD ["./commandservice-server"]

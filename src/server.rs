@@ -1,11 +1,13 @@
 use bpp_command_api::traits::YouTubeSendable;
-use tonic::{transport::Server, Request, Response, Status};
+use tonic::{Request, Response, Status, transport::{Server, server::Router}};
 use ::log::{debug, error, info};
 use crate::{loader::CommandProcessor, log::setup_log};
-use std::{env, sync::{Arc, Mutex}};
+use std::{env, net::SocketAddr, sync::{Arc, Mutex}};
 use async_trait::async_trait;
+use tonic::transport::server::Unimplemented;
 
 use commandservice::*;
+use command_service_server::{CommandService, CommandServiceServer};
 
 pub mod log;
 mod loader;
@@ -40,7 +42,7 @@ fn ensure_command_directory() {
     }
 }
 
-fn load_commands(loader: &mut CommandProcessor) {
+fn load_commands(loader: &CommandProcessor) {
     // for each file in the commands directory, that is a shared library, load it
     for entry in std::fs::read_dir("commands").unwrap() {
         let entry = entry.unwrap();
@@ -51,7 +53,7 @@ fn load_commands(loader: &mut CommandProcessor) {
             if file_name.ends_with(".so") {
                 info!("Loading library: {}", file_name);
                 unsafe {
-                    let load_result = loader.load(file_name);
+                    let load_result = loader.load(path.to_str().unwrap());
                     if load_result.is_err() {
                         error!("Error loading library: {}", load_result.err().unwrap());
                     }
@@ -89,16 +91,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let youtube_address = env::var("YTS_GRPC_ADDRESS").expect("YTS_GRPC_ADDRESS must be set");
     let user_address = env::var("US_GRPC_ADDRESS").expect("US_GRPC_ADDRESS must be set");
 
+    let commandservice_address = env::var("CS_GRPC_ADDRESS");
+    let commandservice_address: SocketAddr = if commandservice_address.is_err() {
+        "0.0.0.0:50051".parse()?
+    } else {
+        commandservice_address.unwrap().parse()?
+    };
+
     let youtube_client = youtubeservice::you_tube_service_client::YouTubeServiceClient::connect(youtube_address).await?;
     let user_client = bpp_command_api::userservice::user_service_client::UserServiceClient::connect(user_address).await?;
 
     info!("Loading commands");
-    let mut loader = CommandProcessor::new(youtube_client, user_client);
+    let loader = CommandProcessor::new(youtube_client, user_client);
+    let loader_arc = Arc::new(loader);
     ensure_command_directory();
-    load_commands(&mut loader);
+    load_commands(&loader_arc);
 
-    let (_) = tokio::join!(
-        loader.fetch_messages()
+    let fetch_loader = loader_arc.clone();
+    let (_, _) = tokio::join!(
+        async move {
+            let server_loader = loader_arc.clone();
+            Server::builder()
+            .add_service(commandservice::command_service_server::CommandServiceServer::new(loader::CommandServiceServer {
+                processor: server_loader,
+            }))
+            .serve(commandservice_address).await
+        },
+        fetch_loader.fetch_messages()
     );
 
     return Ok(());
