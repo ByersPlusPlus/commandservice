@@ -152,7 +152,7 @@ impl CommandProcessor {
             });
         }
 
-        return Ok(());
+        Ok(())
     }
 
     pub async fn fetch_messages(&self) -> Void {
@@ -217,7 +217,7 @@ impl CommandProcessor {
             }
         }
 
-        return Ok(());
+        Ok(())
     }
 
     #[allow(dead_code)]

@@ -118,5 +118,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         fetch_loader.fetch_messages()
     );
 
-    return Ok(());
+    Ok(())
 }
