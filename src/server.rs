@@ -1,9 +1,7 @@
-use bpp_command_api::traits::YouTubeSendable;
 use tonic::transport::Server;
 use ::log::{debug, error, info};
 use crate::{loader::CommandProcessor, log::setup_log};
 use std::{env, net::SocketAddr, sync::Arc};
-use async_trait::async_trait;
 
 use commandservice::*;
 
@@ -12,20 +10,6 @@ mod loader;
 
 pub mod commandservice {
     tonic::include_proto!("commandservice");
-}
-
-pub mod youtubeservice {
-    tonic::include_proto!("youtubeservice");
-}
-
-#[async_trait]
-impl YouTubeSendable for youtubeservice::you_tube_service_client::YouTubeServiceClient<tonic::transport::Channel> {
-    async fn send_message(&mut self, message: &str) {
-        let response = youtubeservice::you_tube_service_client::YouTubeServiceClient::send_message(&mut self, message.to_string()).await;
-        if response.is_err() {
-            error!("Error sending message to YouTube: {}", response.err().unwrap());
-        }
-    }
 }
 
 // Implement your proto here
@@ -96,7 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         commandservice_address.unwrap().parse()?
     };
 
-    let youtube_client = youtubeservice::you_tube_service_client::YouTubeServiceClient::connect(youtube_address).await?;
+    let youtube_client = bpp_command_api::youtubeservice::you_tube_service_client::YouTubeServiceClient::connect(youtube_address).await?;
     let user_client = bpp_command_api::userservice::user_service_client::UserServiceClient::connect(user_address).await?;
 
     info!("Loading commands");

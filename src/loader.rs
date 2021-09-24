@@ -2,12 +2,11 @@ use async_trait::async_trait;
 use std::{ collections::HashMap, ffi::OsStr, path::PathBuf, sync::{Arc, Mutex}, time::Duration};
 use tonic::{Request, transport::Channel};
 
-use super::youtubeservice::you_tube_service_client::YouTubeServiceClient;
+use bpp_command_api::{structs::ServiceDirectory, youtubeservice::you_tube_service_client::YouTubeServiceClient};
 use bpp_command_api::{userservice::user_service_client::UserServiceClient};
-use bpp_command_api::userservice::BppUserById;
 use bpp_command_api::{
     structs::Message,
-    traits::{Command, YouTubeSendable},
+    traits::Command,
     CommandDeclaration, CommandError,
 };
 use libloading::Library;
@@ -25,7 +24,7 @@ custom_error::custom_error! { pub ProcessorError
 
 #[derive(Clone)]
 pub struct CommandProxy {
-    pub command: Box<dyn Command<dyn YouTubeSendable>>,
+    pub command: Box<dyn Command>,
     _lib: Arc<Library>,
     _lib_name: String,
     pub aliases: Vec<String>,
@@ -34,19 +33,14 @@ pub struct CommandProxy {
 
 #[async_trait]
 impl
-    Command<
-        super::youtubeservice::you_tube_service_client::YouTubeServiceClient<
-            tonic::transport::Channel,
-        >,
-    > for CommandProxy
+    Command for CommandProxy
 {
     async fn execute(
         &self,
         message: Message,
-        sendable: &mut YouTubeServiceClient<Channel>,
-        user_client: &mut UserServiceClient<Channel>,
+        service_directory: &mut ServiceDirectory,
     ) -> Result<(), CommandError> {
-        self.command.execute(message, sendable, user_client).await
+        self.command.execute(message, service_directory).await
     }
 }
 
@@ -71,7 +65,7 @@ impl bpp_command_api::traits::CommandRegistrar for CommandRegistrar {
         &mut self,
         name: &str,
         aliases: &[&str],
-        command: Box<dyn Command<dyn YouTubeSendable>>,
+        command: Box<dyn Command>,
     ) {
         let proxy = CommandProxy {
             command,
@@ -141,7 +135,11 @@ impl CommandProcessor {
         let raw_message = message.message.clone();
         let library_name = command._lib_name.clone();
 
-        let command_result = command.execute(message, sender, user_client).await;
+        let mut service_directory = ServiceDirectory {
+            userservice_client: user_client,
+            youtubeservice_client: sender,
+        };
+        let command_result = command.execute(message, &mut service_directory).await;
 
         if command_result.is_err() {
             error!("{:?}", command_result.err().unwrap());
@@ -178,7 +176,7 @@ impl CommandProcessor {
         while let Some(message) = stream.message().await? {
             let channel_id = message.channel_id.clone();
             let mut user = user_service
-                .get_user_by_id(Request::new(BppUserById { channel_id }))
+                .get_user_by_id(Request::new(channel_id))
                 .await;
             if user.is_err() {
                 let err = user.as_ref().err().unwrap();
@@ -187,7 +185,7 @@ impl CommandProcessor {
                     tokio::time::sleep(Duration::from_millis(100)).await;
                     let channel_id = message.channel_id.clone();
                     user = user_service
-                        .get_user_by_id(Request::new(BppUserById { channel_id }))
+                        .get_user_by_id(Request::new(channel_id))
                         .await;
                     if user.is_err() {
                         warn!("User doesn't exist in userservice, even with waiting, skipping message (this could also indicate the userservice not properly fetching users)");
