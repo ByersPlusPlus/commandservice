@@ -294,7 +294,7 @@ impl CommandProcessor {
         if library.is_err() {
             let err = library.err().unwrap();
             return Err(ProcessorError::LoadError {
-                library_name: file_name.to_string(),
+                library_name: file_name,
                 message: err.to_string(),
             });
         }
@@ -308,7 +308,7 @@ impl CommandProcessor {
 
         if decl.rustc_version != bpp_command_api::RUSTC_VERSION {
             return Err(ProcessorError::LibraryRustCVersionMismatch {
-                library_name: file_name.clone(),
+                library_name: file_name,
                 rustc_version: bpp_command_api::RUSTC_VERSION.to_string(),
                 actual_rustc_version: decl.rustc_version.to_string(),
             });
@@ -316,7 +316,7 @@ impl CommandProcessor {
 
         if decl.core_version != bpp_command_api::CORE_VERSION {
             return Err(ProcessorError::LibraryCoreVersionMismatch {
-                library_name: file_name.clone(),
+                library_name: file_name,
                 core_version: bpp_command_api::CORE_VERSION.to_string(),
                 actual_core_version: decl.core_version.to_string(),
             });
@@ -327,9 +327,9 @@ impl CommandProcessor {
         let lib_clone = self.libraries.clone();
         let mut lib = lib_clone.lock().unwrap();
         lib
-            .insert(file_name.clone(), Arc::new(registrar));
+            .insert(file_name, Arc::new(registrar));
 
-        return Ok(());
+        Ok(())
     }
 }
 
